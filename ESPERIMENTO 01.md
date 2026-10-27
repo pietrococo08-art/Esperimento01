@@ -1,0 +1,427 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro di Classe Locale</title>
+    <!-- Tailwind CSS per una grafica moderna e pulita -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Contenitore della cella per ospitare più pallini affiancati */
+        .vote-cell-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-height: 40px;
+        }
+
+        /* Stili personalizzati per i pallini colorati dei voti */
+        .vote-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            font-size: 10px;
+            font-weight: bold;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .state-0 { background-color: #374151; color: #9ca3af; } /* Spento / Grigio */
+        .state-1 { background-color: #ef4444; color: white; }     /* Rosso (Insufficiente) */
+        .state-2 { background-color: #eab308; color: white; }     /* Giallo (Quasi sufficiente) */
+        .state-3 { background-color: #22c55e; color: white; }     /* Verde (Sufficiente) */
+
+        /* Stile per il pulsante Jolly */
+        .jolly-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            font-size: 16px;
+        }
+        .jolly-active { background-color: #4b5563; box-shadow: 0 0 10px rgba(234, 179, 8, 0.5); }
+        .jolly-off { background-color: #1f2937; opacity: 0.4; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 py-4 px-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <span class="text-xs uppercase tracking-wider text-indigo-400 font-semibold">Registro Locale</span>
+                <h1 class="text-2xl font-bold tracking-tight">Registro di Classe</h1>
+                <p class="text-sm text-gray-400">Tocca per cambiare colore. <b>Tieni premuto</b> per aggiungere altri pallini o gestire i voti.</p>
+            </div>
+            <div class="px-3 py-1 bg-green-900/50 border border-green-700 text-green-300 rounded-full text-xs font-medium">
+                Salvataggio Locale Attivo
+            </div>
+        </div>
+    </header>
+
+    <!-- Statistiche Rapide -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <span class="text-xs text-gray-400">Studenti</span>
+                <div class="text-2xl font-bold" id="stat-students">25</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <span class="text-xs text-gray-400">Materie</span>
+                <div class="text-2xl font-bold" id="stat-subjects">6</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <span class="text-xs text-gray-400">Voti Inseriti</span>
+                <div class="text-2xl font-bold text-indigo-400" id="stat-active">0</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+                <span class="text-xs text-gray-400">Completamento</span>
+                <div class="text-2xl font-bold text-green-400" id="stat-percent">0%</div>
+            </div>
+        </div>
+
+        <!-- Tabella Registro -->
+        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-x-auto shadow-xl">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-700 bg-gray-800/50 text-gray-400 text-xs uppercase tracking-wider">
+                        <th class="p-4 sticky left-0 bg-gray-800 z-10 min-w-[200px]">Studente</th>
+                        <th class="p-4 text-center text-yellow-400 font-semibold">Jolly</th>
+                        <th class="p-4 text-center">Italiano</th>
+                        <th class="p-4 text-center">Matematica</th>
+                        <th class="p-4 text-center">Fisica</th>
+                        <th class="p-4 text-center">Inglese</th>
+                        <th class="p-4 text-center">Storia</th>
+                        <th class="p-4 text-center">Informatica</th>
+                    </tr>
+                </thead>
+                <tbody id="registry-body" class="divide-y divide-gray-700/50 text-sm">
+                    <!-- Generato via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Modale Avanzato per Gestione Voti e Pallini Multipli (Long Press) -->
+    <div id="count-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 border border-gray-700 p-6 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center">
+            <h3 class="text-lg font-bold mb-1">Gestione Voti Materia</h3>
+            <p class="text-xs text-gray-400 mb-5">Modifica il conteggio, aggiungi un secondo/terzo colore o rimuovi i voti:</p>
+            
+            <div id="modal-content-area" class="space-y-4 mb-6 text-left">
+                <!-- Generato dinamicamente via JS -->
+            </div>
+
+            <button onclick="closeModal()" class="w-full py-2.5 bg-gray-700 hover:bg-gray-600 rounded-xl text-sm font-medium transition-colors">Chiudi</button>
+        </div>
+    </div>
+
+    <script>
+        const students = [
+            "Amata Claudia",
+            "Bisignano Serena",
+            "Brunetti Simone",
+            "Caia Silvia",
+            "Cantone Carlotta",
+            "Caratozzolo Salvatore",
+            "Cavallaro Damiano",
+            "Coco Pietro",
+            "Costanzo Giulio",
+            "D'Agostino Luigi",
+            "Dashko Vitalik",
+            "Giaquinto Simone",
+            "Granata Gabriele",
+            "Lazzara Davide",
+            "Maddalena Federico",
+            "Mancini Gabriele",
+            "Maugeri Maria",
+            "Miccichè Benedetta",
+            "Pernice Marco",
+            "Sabella Antonio",
+            "Salem Ibrahim",
+            "Testa Alessia",
+            "Trifilò Davide",
+            "Villari Giovanni",
+            "Zibava Stefan"
+        ];
+        
+        const subjects = ["Italiano", "Matematica", "Fisica", "Inglese", "Storia", "Informatica"];
+
+        let registryData = {};
+        let jollyData = {};
+
+        function loadData() {
+            const savedRegistry = localStorage.getItem('registro_classe_local_data');
+            const savedJolly = localStorage.getItem('registro_classe_jolly_data');
+            if (savedRegistry) {
+                try { registryData = JSON.parse(savedRegistry); } catch(e) { registryData = {}; }
+            }
+            if (savedJolly) {
+                try { jollyData = JSON.parse(savedJolly); } catch(e) { jollyData = {}; }
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('registro_classe_local_data', JSON.stringify(registryData));
+            localStorage.setItem('registro_classe_jolly_data', JSON.stringify(jollyData));
+        }
+
+        function initApp() {
+            loadData();
+            const tbody = document.getElementById("registry-body");
+            tbody.innerHTML = "";
+
+            students.forEach((student, sIndex) => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-gray-700/30 transition-colors";
+
+                // Nome Studente
+                const tdName = document.createElement("td");
+                tdName.className = "p-4 font-medium sticky left-0 bg-gray-800 z-10 border-r border-gray-700/50";
+                tdName.innerHTML = `${sIndex + 1}. ${student}`;
+                tr.appendChild(tdName);
+
+                // Colonna Jolly
+                const tdJolly = document.createElement("td");
+                tdJolly.className = "p-4 text-center border-r border-gray-700/50";
+                const jollyBtn = document.createElement("button");
+                
+                let isJollyActive = jollyData[sIndex] !== undefined ? jollyData[sIndex] : true;
+                updateJollyVisual(jollyBtn, isJollyActive);
+
+                jollyBtn.onclick = () => {
+                    let currentState = jollyData[sIndex] !== undefined ? jollyData[sIndex] : true;
+                    jollyData[sIndex] = !currentState;
+                    updateJollyVisual(jollyBtn, jollyData[sIndex]);
+                    saveData();
+                };
+                tdJolly.appendChild(jollyBtn);
+                tr.appendChild(tdJolly);
+
+                // Celle Materie
+                subjects.forEach((subject, subIndex) => {
+                    const td = document.createElement("td");
+                    td.className = "p-4 text-center";
+
+                    const container = document.createElement("div");
+                    container.className = "vote-cell-container";
+
+                    let entries = getCellEntries(sIndex, subIndex);
+
+                    if (entries.length === 0) {
+                        entries = [{ state: 0, count: 0 }];
+                    }
+
+                    entries.forEach((entry, entryIndex) => {
+                        const btn = document.createElement("button");
+                        updateButtonVisual(btn, entry.state, entry.count);
+
+                        // Click normale sul singolo pallino: cicla il suo stato
+                        btn.onclick = () => {
+                            let currentEntries = getCellEntries(sIndex, subIndex);
+                            if (currentEntries.length === 0) currentEntries = [{ state: 0, count: 0 }];
+                            
+                            currentEntries[entryIndex].state = (currentEntries[entryIndex].state + 1) % 4;
+                            if (currentEntries[entryIndex].state === 0 && currentEntries.length === 1) {
+                                currentEntries[entryIndex].count = 0;
+                            } else if (currentEntries[entryIndex].count === 0) {
+                                currentEntries[entryIndex].count = 1;
+                            }
+
+                            setCellEntries(sIndex, subIndex, currentEntries);
+                            saveData();
+                            initApp();
+                        };
+
+                        container.appendChild(btn);
+                    });
+
+                    // Long Press per aprire il menu avanzato
+                    let pressTimer = null;
+                    const startPress = () => {
+                        pressTimer = setTimeout(() => {
+                            openModal(sIndex, subIndex);
+                        }, 600);
+                    };
+                    const cancelPress = () => {
+                        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+                    };
+
+                    container.addEventListener("mousedown", startPress);
+                    container.addEventListener("touchstart", startPress);
+                    container.addEventListener("mouseup", cancelPress);
+                    container.addEventListener("mouseleave", cancelPress);
+                    container.addEventListener("touchend", cancelPress);
+
+                    td.appendChild(container);
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+            updateStats();
+        }
+
+        function getCellEntries(sIndex, subIndex) {
+            if (!registryData[sIndex] || !registryData[sIndex][subIndex]) return [];
+            let val = registryData[sIndex][subIndex];
+            if (Array.isArray(val)) return val;
+            if (typeof val === 'object') return [val];
+            return val > 0 ? [{ state: val, count: 1 }] : [];
+        }
+
+        function setCellEntries(sIndex, subIndex, entries) {
+            if (!registryData[sIndex]) registryData[sIndex] = {};
+            const valid = entries.filter(e => e.state > 0);
+            if (valid.length === 0) {
+                delete registryData[sIndex][subIndex];
+            } else {
+                registryData[sIndex][subIndex] = valid;
+            }
+        }
+
+        function updateButtonVisual(btn, state, count) {
+            btn.className = `vote-btn state-${state}`;
+            if (state === 0 || count <= 1) {
+                btn.innerHTML = "";
+            } else {
+                btn.innerHTML = `x${count}`;
+            }
+            const titles = ["Spento", "Insufficiente", "Quasi sufficiente", "Sufficiente"];
+            btn.title = `${titles[state]} (Qtà: ${count})`;
+        }
+
+        function updateJollyVisual(btn, isActive) {
+            if (isActive) {
+                btn.className = "jolly-btn jolly-active";
+                btn.innerHTML = "⭐";
+                btn.title = "Jolly attivo";
+            } else {
+                btn.className = "jolly-btn jolly-off";
+                btn.innerHTML = "⭐";
+                btn.title = "Jolly perso";
+            }
+        }
+
+        function openModal(sIndex, subIndex) {
+            const container = document.getElementById("modal-content-area");
+            container.innerHTML = "";
+            let entries = getCellEntries(sIndex, subIndex);
+            if (entries.length === 0) entries = [{ state: 1, count: 1 }];
+
+            const colorNames = { 1: "Rosso (Ins.)", 2: "Giallo (Q.Suff.)", 3: "Verde (Suff.)" };
+            const colorClasses = { 1: "bg-red-500", 2: "bg-yellow-500", 3: "bg-green-500" };
+
+            entries.forEach((entry, idx) => {
+                const groupDiv = document.createElement("div");
+                groupDiv.className = "bg-gray-700/50 p-3 rounded-xl border border-gray-600 flex flex-col gap-2";
+                
+                groupDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full ${colorClasses[entry.state]} inline-block"></span>
+                            ${colorNames[entry.state]}
+                        </span>
+                        <button onclick="removeEntry(${sIndex}, ${subIndex}, ${idx})" class="text-xs text-red-400 hover:text-red-300 font-semibold px-2 py-1 bg-red-950/40 rounded-lg border border-red-800">Elimina gruppo</button>
+                    </div>
+                    <div class="text-xs text-gray-400">Numero di voti per questa categoria (da 1 a 5):</div>
+                    <div class="flex gap-2" id="count-row-${idx}"></div>
+                `;
+                container.appendChild(groupDiv);
+
+                const countRow = groupDiv.querySelector(`#count-row-${idx}`);
+                for (let i = 1; i <= 5; i++) {
+                    const btnCount = document.createElement("button");
+                    btnCount.className = `flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${i === entry.count ? 'bg-indigo-600 text-white ring-2 ring-indigo-400' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`;
+                    btnCount.innerText = i;
+                    btnCount.onclick = () => {
+                        entries[idx].count = i;
+                        setCellEntries(sIndex, subIndex, entries);
+                        saveData();
+                        initApp();
+                        openModal(sIndex, subIndex);
+                    };
+                    countRow.appendChild(btnCount);
+                }
+            });
+
+            const usedColors = entries.map(e => e.state);
+            const availableColors = [1, 2, 3].filter(c => !usedColors.includes(c));
+
+            if (availableColors.length > 0 && entries.length < 3) {
+                const addDiv = document.createElement("div");
+                addDiv.className = "pt-2 border-t border-gray-700";
+                addDiv.innerHTML = `<div class="text-xs text-gray-400 mb-2">Aggiungi un altro colore in questa casella:</div>`;
+                
+                const btnRow = document.createElement("div");
+                btnRow.className = "flex gap-2";
+
+                availableColors.forEach(col => {
+                    const addBtn = document.createElement("button");
+                    addBtn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 ${colorClasses[col]}`;
+                    addBtn.innerHTML = `+ Aggiungi ${colorNames[col]}`;
+                    addBtn.onclick = () => {
+                        entries.push({ state: col, count: 1 });
+                        setCellEntries(sIndex, subIndex, entries);
+                        saveData();
+                        initApp();
+                        openModal(sIndex, subIndex);
+                    };
+                    btnRow.appendChild(addBtn);
+                });
+                addDiv.appendChild(btnRow);
+                container.appendChild(addDiv);
+            }
+
+            document.getElementById("count-modal").classList.remove("hidden");
+        }
+
+        function removeEntry(sIndex, subIndex, entryIndex) {
+            let entries = getCellEntries(sIndex, subIndex);
+            entries.splice(entryIndex, 1);
+            setCellEntries(sIndex, subIndex, entries);
+            saveData();
+            initApp();
+            if (entries.length === 0) {
+                closeModal();
+            } else {
+                openModal(sIndex, subIndex);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("count-modal").classList.add("hidden");
+        }
+
+        function updateStats() {
+            let totalCells = students.length * subjects.length;
+            let activeCount = 0;
+
+            for (let s in registryData) {
+                for (let sub in registryData[s]) {
+                    const entries = getCellEntries(s, sub);
+                    if (entries.length > 0) activeCount++;
+                }
+            }
+
+            document.getElementById("stat-active").innerText = activeCount;
+            const percent = Math.round((activeCount / totalCells) * 100);
+            document.getElementById("stat-percent").innerText = percent + "%";
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
